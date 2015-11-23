@@ -1,0 +1,13 @@
+Resources
+
+[1] https://inventory.data.gov/dataset/adjusted-cohort-graduation-rates-at-the-school-level-school-year-2011-12
+
+[2] https://nces.ed.gov/ccd/elsi/tableGenerator.aspx
+
+[3] Udergraduate Economic Review Paper http://digitalcommons.iwu.edu/cgi/viewcontent.cgi?article=1047&context=uer
+
+[4] U.S. Class Size Policy
+http://www.ecs.org/clearinghouse/81/95/8195.pdf
+
+[5] Slopegraph Code
+https://acaird.github.io/computers/r/2013/11/27/slopegraphs-ggplot/
