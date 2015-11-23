@@ -612,7 +612,7 @@ state.grad_rate_variations <- data %>% group_by(region) %>%
 
 print.data.frame(state.grad_rate_variations)
 
-with(state.grad_rate_variations, cor(grad.rate.variation, grad.rate))
+with(state.grad_rate_variations, cor(grad.rate.variation, grad.rate.mean))
 ```
 
 So the variation of Graduation Rate is very strongly negatively correlated with mean Graduation Rate. This makes a lot of sense because there's a hard limit of a 100% Graduation Rate, so for schools to be at the top, most of their schools have to be near 100%. However, it does add some knowledge, because it could be the case that the states at the bottom have a lot of poorly performing schools, but this correlation indicates that those states actually have a mix of strong and weak schools.
