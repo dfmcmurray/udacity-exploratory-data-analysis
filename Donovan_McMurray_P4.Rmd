@@ -11,9 +11,7 @@ I am interested in education data and predicting the success of students in bett
 
 #Setup
 
-###Libraries
-
-```{r}
+```{r echo=FALSE, warning=FALSE, message=FALSE}
 library(dplyr)
 library(tidyr)
 library(ggplot2)
@@ -82,12 +80,25 @@ The most important variable in my dataset is ALL_RATE, which is the percentage o
 
 The first thing I do is create histograms for these four variables. Additionally, I plot the histogram of the Revenue Per Student variable with a log tranformation on the x-axis to better observe that variable's distribution.
 
-```{r}
+```{r echo=FALSE, warning=FALSE, message=FALSE}
 ggplot(aes(ALL_RATE), data=data) + xlab("Graduation Rate") + geom_histogram(fill="lightblue", color="black", binwidth=1)
+summary(data$ALL_RATE)
+```
+
+```{r echo=FALSE, warning=FALSE, message=FALSE}
 ggplot(aes(ALL_COHORT), data=data) + xlab("Number of Students Per School") + geom_histogram(fill="orange", color="black", binwidth=1) 
+summary(data$ALL_COHORT)
+```
+
+```{r echo=FALSE, warning=FALSE, message=FALSE}
 ggplot(aes(Pupil.Teacher.Ratio), data=data) + xlab("Pupil Teacher Ratio") + geom_histogram(fill="purple", color="black", binwidth=1) + xlim(0,40)
+summary(data$Pupil.Teacher.Ratio)
+```
+
+```{r echo=FALSE, warning=FALSE, message=FALSE}
 ggplot(aes(Total.General.Revenue.Per.Student), data=data) + xlab("Revenue Per Student") + geom_histogram(fill="lightgreen", color="black", binwidth=10000)
 ggplot(aes(Total.General.Revenue.Per.Student), data=data) + xlab("Revenue Per Student") + geom_histogram(fill="lightgreen", color="black", binwidth=.05) + scale_x_continuous(trans="log10")
+summary(data$Total.General.Revenue.Per.Student)
 ```
 
 The Graduation Rate distribution is somewhat normal, though it's obviously cut off at 100 since it's impossible for a percentage to go over 100, and it has a long left tail.
@@ -96,18 +107,10 @@ The Number of Students Per School distribution appears to be exponential, which 
 
 The Revenue Per Student distribution isn't obvious from the linear histrogram, but transforming the x axis to a log scale reveals a close to normal distribution that is a little right skewed. So the Revenue Per Student distribution is approximately log-normal.
 
-For a numerical reference, I then called the summary function on each of these variables, so that I didn't have to eyeball the defining statistical features.
-
-```{r}
-summary(data$ALL_RATE)
-summary(data$ALL_COHORT)
-summary(data$Pupil.Teacher.Ratio)
-summary(data$Total.General.Revenue.Per.Student)
-```
-
 ####Correlations
 
 ```{r}
+#Generate correlation matrix of hypothesis variables and Graduation Rate
 data %>% select(ALL_RATE, ALL_COHORT, Pupil.Teacher.Ratio, Total.General.Revenue.Per.Student) %>% 
   rename(grad.rate=ALL_RATE, num.students=ALL_COHORT, pt.ratio=Pupil.Teacher.Ratio, rev.per.stud=Total.General.Revenue.Per.Student) %>% 
 cor(use="na.or.complete")
@@ -127,72 +130,74 @@ Data exploration is about uncovering knowledge, and that knowledge is valuable i
 
 Next, I want to do some regional comparisons. I start out with box plots of the four variables we've looked at so far by state.
 
-```{r}
+```{r echo=FALSE, warning=FALSE, message=FALSE}
 ggplot(aes(x=Postal.Code, y=ALL_RATE), data=data) + 
-  geom_boxplot() + 
-  theme(axis.text.x = element_text(angle = 270, hjust = 1)) 
-
-ggplot(aes(x=Postal.Code, y=ALL_COHORT), data=data) + 
-  geom_boxplot() + 
-  theme(axis.text.x = element_text(angle = 270, hjust = 1)) 
-
-ggplot(aes(x=Postal.Code, y=Pupil.Teacher.Ratio), data=data) + 
-  geom_boxplot() + 
-  theme(axis.text.x = element_text(angle = 270, hjust = 1))
-
-ggplot(aes(x=Postal.Code, y=Total.General.Revenue.Per.Student), data=data) + 
   geom_boxplot() + 
   theme(axis.text.x = element_text(angle = 270, hjust = 1)) 
 ```
 
+It's interesting to note that all of the outliers are below the mean. Given the Graduation Rate histrogram with its long left tail, this makes sense. Also, it's impossible to have a Graduation Rate over 100%, so the higher a state's average Graduation Rate, the less likely it is to have an outlier above the mean.
+
+```{r echo=FALSE, warning=FALSE, message=FALSE}
+ggplot(aes(x=Postal.Code, y=ALL_COHORT), data=data) + 
+  geom_boxplot() + 
+  theme(axis.text.x = element_text(angle = 270, hjust = 1)) 
+```
+
+It makes sense that the more urban states have higher numbers of students for each graduating class. Other than that, it's hard to tell much from this boxplot.
+
+```{r echo=FALSE, warning=FALSE, message=FALSE}
+ggplot(aes(x=Postal.Code, y=Pupil.Teacher.Ratio), data=data) + 
+  geom_boxplot() + 
+  theme(axis.text.x = element_text(angle = 270, hjust = 1))
+```
+
+The variances for Pupil/Teacher Ratios are much lower than the other variables. While these means look low, it should be noted that Pupil/Teacher Ratio is not equivalent to class size. Class size is often 5-8 students higher. This is because not every teacher has a class every period.
+
+```{r echo=FALSE, warning=FALSE, message=FALSE}
+ggplot(aes(x=Postal.Code, y=Total.General.Revenue.Per.Student), data=data) + 
+  geom_boxplot() + scale_y_continuous(trans="log10") +
+  theme(axis.text.x = element_text(angle = 270, hjust = 1)) 
+```
+
+The Revenue per Student box plot (which has a log y-axis), shows that there is a lot of data clustered around each state's mean, since the boxes are all very narrow compared to the whiskers and outliers. Also, many of the states' data is positively skewed.
+
 ####Scatter Plots
 
-Next, I took the three hypothesis variables and made a scatter plot for each agains Graduation Rate, along with a linear regression and a Generalized Additive Model (the default for geom_smooth when n>1000) to better see the effect on Graduation Rate that each hypothesis variable has as it varies.
+Next, I took the three hypothesis variables and made a scatter plot for each agains Graduation Rate, along with a linear regression in red and a Generalized Additive Model (the default for geom_smooth when n>1000) in blue to better see the effect on Graduation Rate that each hypothesis variable has as it varies.
 
 #####Number of Students per School
 
-```{r}
+```{r echo=FALSE, warning=FALSE, message=FALSE}
 ggplot(aes(x=ALL_COHORT, y=ALL_RATE), data=data) + 
   geom_point(alpha=0.10) + 
   xlim(0, quantile(data$ALL_COHORT, .99, na.rm=TRUE)) +
-  geom_smooth(method="lm", color="red")
-
-ggplot(aes(x=ALL_COHORT, y=ALL_RATE), data=data) + 
-  geom_point(alpha=0.10) + 
-  xlim(0, quantile(data$ALL_COHORT, .99, na.rm=TRUE)) +
-  geom_smooth(color="red")
+  geom_smooth(method="lm", color="red") +
+  geom_smooth(color="blue")
 ```
 
 When plotting the Number of Students on the x axis and Graduation Rate on the y axis, we see a slight positive correlation, which matches the correlation coefficient we saw earlier. When we relax our model from being linear, we see that much of the increase occurs when the Number of Students is less than 100, and then it levels off a lot. Also, the banding that we see for cohort sizes under 200 is an effect of the rounding that occurs from the "blurring" effect applied to small schools discussed in "Loading and Cleaning The Data" section.
 
 #####Pupil/Teacher Ratio
 
-```{r}
+```{r echo=FALSE, warning=FALSE, message=FALSE}
 ggplot(aes(x=Pupil.Teacher.Ratio, y=ALL_RATE), data=data) + 
   geom_point(alpha=0.10) + 
   xlim(0, 75) +
-  geom_smooth(method="lm", color="red")
-
-ggplot(aes(x=Pupil.Teacher.Ratio, y=ALL_RATE), data=data) + 
-  geom_point(alpha=0.10) + 
-  xlim(0, 75) +
-  geom_smooth(color="red")
+  geom_smooth(method="lm", color="red") +
+  geom_smooth(color="blue")
 ```
 
 Looking at the scatterplot for Graduation Rate vs Pupil/Teacher Ratio, the relationship is even less clear. The linear model suggests a slight negative correlation, like we saw earlier, but the nonlinear model shows a complicated relationship, peaking around 15 students per teacher, and then decreasing as you move toward 20 students per teacher. Then there is a slight bump at about 22 teachers per student, but that's probably because there are more schools at that level (likely due to state maximums for class size), which can be observed from the vertical banding at those levels. Also of note is the high variace around the model at the very low and very high Pupil/Teacher Rations. This is likely due to the fewer number of schools at these levels.
 
 #####Revenue per Student
 
-```{r}
+```{r echo=FALSE, warning=FALSE, message=FALSE}
 ggplot(aes(x=Total.General.Revenue.Per.Student, y=ALL_RATE), data=data) +
   geom_point(alpha=0.10) + 
   xlim(0, quantile(data$Total.General.Revenue.Per.Student, .99, na.rm=TRUE)) +
-  geom_smooth(method="lm", color="red")
-
-ggplot(aes(x=Total.General.Revenue.Per.Student, y=ALL_RATE), data=data) +
-  geom_point(alpha=0.10) + 
-  xlim(0, quantile(data$Total.General.Revenue.Per.Student, .99, na.rm=TRUE)) +
-  geom_smooth(color="red")
+  geom_smooth(method="lm", color="red") +
+  geom_smooth(color="blue")
 ```
 
 The linear model is the flattest for Revenue Per Student, which again matches the correlation coefficient we observed earlier, indicating that Revenue Per Student has the least predictive power of the three hypothesis variables. Looking at the nonlinear model, it's even less clear what kind of relationship this hypothesis variable has with Graduation Rate. Most surprising to me is the drop off as you move right past about $22,000 per student.
@@ -201,7 +206,7 @@ The linear model is the flattest for Revenue Per Student, which again matches th
 
 While the boxplots and scatterplots lay out the data informatively, it's harder for laypeople to glean any relationships from it because there is so much information in each plot. To make something that's easier for the human eye to interpret, I want to map out the states geographically, since every U.S. citizen should be comfortable with that representation. First, I have to get each state's latitude and longitude data. Then, I'll group the school data by state. Finally, I'll plot a heat map of each variable.
 
-```{r}
+```{r echo=FALSE, warning=FALSE, message=FALSE}
 state_coords <- read.csv("state_coords.csv")
 
 data.state_means <- data %>% 
@@ -250,7 +255,7 @@ These heat maps are much more useful for comparing the four variables, especiall
 
 For a more granular look, I will plot the same data on a county-by-county basis instead of by state so that the data isn't as heavily grouped, especially in the larger states.
 
-```{r}
+```{r echo=FALSE, warning=FALSE, message=FALSE}
 all_counties <- read.csv("county_coords.csv")
 
 data.county_means <- data %>% 
@@ -285,11 +290,10 @@ data.county_means <- data %>%
 
 county_data <- left_join(all_counties, data.county_means, by=c("region", "subregion"))
 
-ggplot() + geom_polygon(data=county_data, aes(x=long, y=lat, group = group, fill=county_data$ALL_RATE),colour="white") + scale_fill_continuous(low = "thistle2", high = "darkred", guide="colorbar")
-ggplot() + geom_polygon(data=county_data, aes(x=long, y=lat, group = group, fill=county_data$ALL_COHORT),colour="white") + scale_fill_continuous(low = "thistle2", high = "orange", guide="colorbar", trans="log10")
-ggplot() + geom_polygon(data=county_data, aes(x=long, y=lat, group = group, fill=county_data$Pupil.Teacher.Ratio),colour="white") + scale_fill_continuous(low = "thistle2", high = "darkblue", guide="colorbar")
-ggplot() + geom_polygon(data=county_data, aes(x=long, y=lat, group = group, fill=county_data$Total.General.Revenue.Per.Student),colour="white") + scale_fill_continuous(low = "thistle2", high = "darkgreen", guide="colorbar", trans="log10")
-
+ggplot() + geom_polygon(data=county_data, aes(x=long, y=lat, group = group, fill=county_data$ALL_RATE)) + scale_fill_continuous(low = "thistle2", high = "darkred", guide="colorbar", name="Graduation Rate")
+ggplot() + geom_polygon(data=county_data, aes(x=long, y=lat, group = group, fill=county_data$ALL_COHORT)) + scale_fill_continuous(low = "thistle2", high = "orange", guide="colorbar", trans="log10", name="Students per School")
+ggplot() + geom_polygon(data=county_data, aes(x=long, y=lat, group = group, fill=county_data$Pupil.Teacher.Ratio)) + scale_fill_continuous(low = "thistle2", high = "darkblue", guide="colorbar", name="Pupil/Teacher Ratio")
+ggplot() + geom_polygon(data=county_data, aes(x=long, y=lat, group = group, fill=county_data$Total.General.Revenue.Per.Student)) + scale_fill_continuous(low = "thistle2", high = "darkgreen", guide="colorbar", trans="log10", name="Revenue per Student")
 ```
 
 Even though these maps are more details, it's even harder to eyeball correlations between them because the regions are so much smaller. There is definitely a need for a more encompassing, multivariate exploration.
@@ -324,27 +328,28 @@ LEP: Students with limited English proficiency
 
 To compare all of these cohorts with the overall graduation rate, I plotted a line graph connecting each state's graduation rates for each cohort, ordered by the overall graduation rate (the black line).
 
-```{r}
+```{r echo=FALSE, warning=FALSE, message=FALSE}
 data.state_means$Postal.Code <- factor(data.state_means$Postal.Code, as.character(data.state_means$Postal.Code))
 
 ggplot(aes(x=Postal.Code), data=filter(data.state_means, !is.na(Postal.Code))) + theme(axis.text.x = element_text(angle = 270, hjust = 1)) +
   geom_line(aes(y=ALL_RATE, group=2), color="black") +
-  geom_point(aes(y=MAM_RATE), color="red") + geom_line(aes(y=MAM_RATE, group=2), color="red", alpha=0.5) + 
-  geom_point(aes(y=MAS_RATE), color="orange") + geom_line(aes(y=MAS_RATE, group=2), color="orange", alpha=0.5) + 
-  geom_point(aes(y=MBL_RATE), color="yellow") + geom_line(aes(y=MBL_RATE, group=2), color="yellow", alpha=0.5) + 
-  geom_point(aes(y=MHI_RATE), color="green") + geom_line(aes(y=MHI_RATE, group=2), color="green", alpha=0.5) + 
-  geom_point(aes(y=MTR_RATE), color="lightblue") + geom_line(aes(y=MTR_RATE, group=2), color="lightblue", alpha=0.5) + 
-  geom_point(aes(y=MWH_RATE), color="blue") + geom_line(aes(y=MWH_RATE, group=2), color="blue", alpha=0.5) + 
-  geom_point(aes(y=CWD_RATE), color="darkblue") + geom_line(aes(y=CWD_RATE, group=2), color="darkblue", alpha=0.5) + 
-  geom_point(aes(y=ECD_RATE), color="purple") + geom_line(aes(y=ECD_RATE, group=2), color="purple", alpha=0.5) + 
-  geom_point(aes(y=LEP_RATE), color="magenta") + geom_line(aes(y=LEP_RATE, group=2), color="magenta", alpha=0.5) 
+  geom_point(aes(y=MAM_RATE, color="NativeAmerican")) + geom_line(aes(y=MAM_RATE, group=2, color="NativeAmerican"), alpha=0.5) + 
+  geom_point(aes(y=MAS_RATE, color="Asian")) + geom_line(aes(y=MAS_RATE, group=2, color="Asian"), alpha=0.5) + 
+  geom_point(aes(y=MBL_RATE, color="Black")) + geom_line(aes(y=MBL_RATE, group=2, color="Black"), alpha=0.5) + 
+  geom_point(aes(y=MHI_RATE, color="Hispanic")) + geom_line(aes(y=MHI_RATE, group=2, color="Hispanic"), alpha=0.5) + 
+  geom_point(aes(y=MTR_RATE, color="TwoPlusRaces")) + geom_line(aes(y=MTR_RATE, group=2, color="TwoPlusRaces"), alpha=0.5) + 
+  geom_point(aes(y=MWH_RATE, color="White")) + geom_line(aes(y=MWH_RATE, group=2, color="White"), alpha=0.5) + 
+  geom_point(aes(y=CWD_RATE, color="Disabled")) + geom_line(aes(y=CWD_RATE, group=2, color="Disabled"), alpha=0.5) + 
+  geom_point(aes(y=ECD_RATE, color="EconomicallyDisadv")) + geom_line(aes(y=ECD_RATE, group=2, color="EconomicallyDisadv"), alpha=0.5) + 
+  geom_point(aes(y=LEP_RATE, color="LimitedEnglish")) + geom_line(aes(y=LEP_RATE, group=2, color="LimitedEnglish"), alpha=0.5) +
+  scale_colour_manual(name="Cohorts", values=c(NativeAmerican="red", Asian="orange", Black="yellow", Hispanic="green", TwoPlusRaces="lightblue", White="blue", Disabled="darkblue", EconomicallyDisadv="purple", LimitedEnglish="magenta"))
 ```
 
 Since these states are ordered by the overall graduation rate, I was looking for an upward or downward trend in any of the student cohorts to see if a particular student group either bolstered or undermined the total graduation rate. The strongest upward trend was for white students, but this alone doens't mean that white students are a better indicator of a school's success, since it's likely that most schools are predominantly white, so I went on to graph the ratio of each cohort with the total student population to see if that was the case.
 
 I start with the racial groups first, and then plot the other groups second.
 
-```{r}
+```{r echo=FALSE, warning=FALSE, message=FALSE}
 ggplot(aes(x=Postal.Code), data=filter(data.state_means, !is.na(Postal.Code))) + theme(axis.text.x = element_text(angle = 270, hjust = 1)) +
   geom_line(aes(y=MAM_COHORT/ALL_COHORT, group=2, color="Native Am")) + 
   geom_line(aes(y=MAS_COHORT/ALL_COHORT, group=2, color="Asian")) + 
@@ -365,9 +370,9 @@ In the race cohort plot, it's clear that white students predominate, especially 
 
 In the other plot, while I was surprised to see the percentage of economically disadvantaged students across the nation as a whole, none of these three cohorts rise or fall that regularly as you go up in the states' rankings.
 
-The previous plots are a little hard to interpret, so I think a better way to demonstrate the racial make up of each state's students is a stacked bar chart. I ordered the states by total number of students who reported their race, and within each bar, I ordered the fills by the largest race in each particular state.
+The previous plots are a little hard to interpret, so I think a better way to demonstrate the racial make up of each state's students is a stacked bar chart. I ordered the fills by the largest race in each particular state, and each fill represents the percentage of a particular race in a given state.
 
-```{r}
+```{r echo=FALSE, warning=FALSE, message=FALSE}
 sub_cohorts <- select(data.state_means, c(-ALL_RATE, -MAM_RATE, -MAS_RATE, -MBL_RATE, -MHI_RATE, -MTR_RATE, -MWH_RATE, -CWD_RATE, -ECD_RATE, -LEP_RATE, -CWD_COHORT, -ECD_COHORT, -LEP_COHORT)) %>% 
   gather(DEMO, COHORT, MAM_COHORT, MAS_COHORT, MBL_COHORT, MHI_COHORT, MTR_COHORT, MWH_COHORT) %>% 
   filter(!is.na(Postal.Code))
@@ -381,8 +386,10 @@ sub_cohorts <- sub_cohorts %>% arrange(cohort.sum, desc(COHORT))
 
 sub_cohorts$Postal.Code <- factor(sub_cohorts$Postal.Code, as.character(sub_cohorts$Postal.Code))
 
+sub_cohorts$COHORT <- ifelse(is.nan(sub_cohorts$COHORT), 0, sub_cohorts$COHORT)
+
 ggplot(aes(x=Postal.Code, y=COHORT), data=sub_cohorts) + theme(axis.text.x = element_text(angle = 270, hjust = 1)) +
-  geom_bar(aes(fill=DEMO), position="stack", stat="identity") 
+  geom_bar(aes(fill=DEMO), position="fill", stat="identity") 
 ```
 
 This representation really shows by how much White students are the predominant race, and the close relationship between white students' graduation rates and total graduation rates is a result of this fact.
@@ -393,29 +400,23 @@ While these cohort differences are interesting, I'm going to now refocus back on
 
 I tried a number of visualization combinations for Graduation Rate and the three hypothesis variables, but the data is clustered in such a way that I wasn't able to show much. Here are some examples of those plots.
 
-```{r}
+```{r echo=FALSE, warning=FALSE, message=FALSE}
 ggplot(aes(x=ALL_COHORT, y=ALL_RATE), data=data) + 
-  geom_point(aes(color=Total.General.Revenue.Per.Student), alpha=0.05) + 
+  geom_point(aes(color=Total.General.Revenue.Per.Student), alpha=0.05) +
+  scale_color_gradient2(mid="darkred", high="darkgreen") + 
   xlim(0, 1200)
 ```
 
-```{r}
+```{r echo=FALSE, warning=FALSE, message=FALSE}
 ggplot(aes(x=Pupil.Teacher.Ratio, y=ALL_RATE), data=data) + 
   geom_point(aes(color=Total.General.Revenue.Per.Student), alpha=0.05) +
+  scale_color_gradient2(mid="darkred", high="darkgreen") + 
   xlim(0, 40)
 ```
 
 Due to the way my data is distributed, these two plots are very hard to interpret. This particular perspective has a lot of clustering, both spacially and chromatically (with many of the data points being on the dark end of the spectrum).
 
-```{r}
-ggplot(aes(x=Pupil.Teacher.Ratio, y=ALL_RATE), data=data) + 
-  geom_point(aes(size=ALL_COHORT), alpha=0.05) + 
-  xlim(0, 40)
-```
-
-This plot tries to use size instead of color to combine two of the hypothesis variables and compare them to Graduation Rate. Still, this plot is nearly indecipherable.
-
-```{r}
+```{r echo=FALSE, warning=FALSE, message=FALSE}
 ggplot(aes(x=Pupil.Teacher.Ratio, y=ALL_RATE), data=data) + 
   geom_point(aes(size=Total.General.Revenue.Per.Student, color=region), alpha=0.15) + 
   xlim(0, 40) + theme(legend.position="none")
@@ -425,7 +426,7 @@ This plot colors each data point by state, but there's too many colors to distin
 
 I'm starting to realize that the data is clustered in a way that makes multivariate analysis difficult. So I decide to do a few transformations that will make it easier to interpret. 
 
-```{r}
+```{r echo=FALSE, warning=FALSE, message=FALSE}
 ggplot(aes(x=Pupil.Teacher.Ratio, y=Total.General.Revenue.Per.Student), data=data) + 
   geom_point(aes(size=ALL_COHORT), alpha=0.1) +
   scale_y_continuous(trans="log10") + scale_x_continuous(trans="log10") +
@@ -450,7 +451,7 @@ Here are the graphs of the three hypothesis variables (Pupil/Teacher Ratio on th
 
 The first ten plots are the top ten states ranked by their Graduation Rate. 
 
-```{r}
+```{r echo=FALSE, warning=FALSE, message=FALSE}
 ggplot(aes(x=Pupil.Teacher.Ratio, y=Total.General.Revenue.Per.Student), 
        data=arrange(data, region=="IOWA")) + 
   geom_point(aes(size=ALL_COHORT, color=(region=="IOWA"), 
@@ -526,7 +527,7 @@ Nearly all of these schools have low Pupil/Teacher Ratios, whereas the Revenue p
 
 The next ten plots are the bottom ten states when ranked by Graduation Rate.
 
-```{r}
+```{r echo=FALSE, warning=FALSE, message=FALSE}
 ggplot(aes(x=Pupil.Teacher.Ratio, y=Total.General.Revenue.Per.Student), 
        data=arrange(data, region=="MICHIGAN")) + 
   geom_point(aes(size=ALL_COHORT, color=(region=="MICHIGAN"), 
@@ -621,7 +622,7 @@ So the variation of Graduation Rate is very strongly negatively correlated with 
 
 Finally, I want to see how the state rankings by the hypothesis variables stack up agains the rankings by Graduation Rate. So I first compute those three new rankings, and then plot a slope plot for each to show how the rankings change. If any of the hypothesis variables were good predictors, then the slopes of the lines would be small, meaning that a ranking of the hypothesis variable is closer to the Graduation Rate ranking. That is, the states at the top of one ranking are in the top of the other ranking, and the same for the bottom states.
 
-```{r}
+```{r echo=FALSE, warning=FALSE, message=FALSE}
 sizeRanks <- data %>% group_by(Postal.Code) %>% 
   summarize(size=mean(ALL_COHORT, na.rm=TRUE)) %>% 
   arrange(desc(size)) %>% 
@@ -651,17 +652,17 @@ ratioRanks <- inner_join(ratioRanks, gradRanks, by="Postal.Code")
 revRanks <- inner_join(revRanks, gradRanks, by="Postal.Code")
 ```
 
-```{r}
+```{r echo=FALSE, warning=FALSE, message=FALSE}
 p<-ggplot(sizeRanks) + geom_segment(aes(x=0,xend=1,y=size.rank,yend=grad.rate.rank),size=.75) + scale_x_continuous(breaks = c())
 p<-p + theme(panel.background = element_blank())
 p<-p + theme(panel.grid=element_blank())
 p<-p + theme(axis.ticks=element_blank())
 p<-p + theme(axis.text=element_blank())
 p<-p + theme(panel.border=element_blank())     
-p<-p + geom_text(label=sizeRanks$Postal.Code, y=sizeRanks$grad.rate.rank, x=1,hjust=-0.2,size=3.5)
-p<-p + geom_text(label=sizeRanks$Postal.Code, y=sizeRanks$size.rank, x=0,hjust=1.2,size=3.5)
-p<-p + geom_text(label="Revenue Per Student Ranks", x=0, y=(1.05*(max(sizeRanks$grad.rate.rank,sizeRanks$size.rank))),hjust= 1.2,size=3.5)
-p<-p + geom_text(label="Graduation Rate Ranks", x=1, y=(1.05*(max(sizeRanks$grad.rate.rank,sizeRanks$size.rank))),hjust=-0.1,size=3.5)
+p<-p + geom_text(label=sizeRanks$Postal.Code, y=sizeRanks$grad.rate.rank, x=1,hjust=-0.2,size=2)
+p<-p + geom_text(label=sizeRanks$Postal.Code, y=sizeRanks$size.rank, x=0,hjust=1.2,size=2)
+p<-p + geom_text(label="Revenue Per Student Ranks", x=0, y=(1.03*(max(sizeRanks$grad.rate.rank,sizeRanks$size.rank))),hjust= 0.1,size=3.5)
+p<-p + geom_text(label="Graduation Rate Ranks", x=1, y=(1.03*(max(sizeRanks$grad.rate.rank,sizeRanks$size.rank))),hjust= 0.9,size=3.5)
 p
 
 p<-ggplot(ratioRanks) + geom_segment(aes(x=0,xend=1,y=ratio.rank,yend=grad.rate.rank),size=.75) + scale_x_continuous(breaks = c())
@@ -670,10 +671,10 @@ p<-p + theme(panel.grid=element_blank())
 p<-p + theme(axis.ticks=element_blank())
 p<-p + theme(axis.text=element_blank())
 p<-p + theme(panel.border=element_blank())     
-p<-p + geom_text(label=ratioRanks$Postal.Code, y=ratioRanks$grad.rate.rank, x=1,hjust=-0.2,size=3.5)
-p<-p + geom_text(label=ratioRanks$Postal.Code, y=ratioRanks$ratio.rank, x=0,hjust=1.2,size=3.5)
-p<-p + geom_text(label="Revenue Per Student Ranks", x=0, y=(1.05*(max(ratioRanks$grad.rate.rank,ratioRanks$ratio.rank))),hjust= 1.2,size=3.5)
-p<-p + geom_text(label="Graduation Rate Ranks", x=1, y=(1.05*(max(ratioRanks$grad.rate.rank,ratioRanks$ratio.rank))),hjust=-0.1,size=3.5)
+p<-p + geom_text(label=ratioRanks$Postal.Code, y=ratioRanks$grad.rate.rank, x=1,hjust=-0.2,size=2)
+p<-p + geom_text(label=ratioRanks$Postal.Code, y=ratioRanks$ratio.rank, x=0,hjust=1.2,size=2)
+p<-p + geom_text(label="Revenue Per Student Ranks", x=0, y=(1.03*(max(ratioRanks$grad.rate.rank,ratioRanks$ratio.rank))),hjust= 0.1,size=3.5)
+p<-p + geom_text(label="Graduation Rate Ranks", x=1, y=(1.03*(max(ratioRanks$grad.rate.rank,ratioRanks$ratio.rank))),hjust= 0.9,size=3.5)
 p
 
 p<-ggplot(revRanks) + geom_segment(aes(x=0,xend=1,y=rev.per.student.rank,yend=grad.rate.rank),size=.75) + scale_x_continuous(breaks = c())
@@ -682,10 +683,10 @@ p<-p + theme(panel.grid=element_blank())
 p<-p + theme(axis.ticks=element_blank())
 p<-p + theme(axis.text=element_blank())
 p<-p + theme(panel.border=element_blank())     
-p<-p + geom_text(label=revRanks$Postal.Code, y=revRanks$grad.rate.rank, x=1,hjust=-0.2,size=3.5)
-p<-p + geom_text(label=revRanks$Postal.Code, y=revRanks$rev.per.student.rank, x=0,hjust=1.2,size=3.5)
-p<-p + geom_text(label="Revenue Per Student Ranks", x=0, y=(1.05*(max(revRanks$grad.rate.rank,revRanks$rev.per.student.rank))),hjust= 1.2,size=3.5)
-p<-p + geom_text(label="Graduation Rate Ranks", x=1, y=(1.05*(max(revRanks$grad.rate.rank,revRanks$rev.per.student.rank))),hjust=-0.1,size=3.5)
+p<-p + geom_text(label=revRanks$Postal.Code, y=revRanks$grad.rate.rank, x=1,hjust=-0.2,size=2)
+p<-p + geom_text(label=revRanks$Postal.Code, y=revRanks$rev.per.student.rank, x=0,hjust=1.2,size=2)
+p<-p + geom_text(label="Revenue Per Student Ranks", x=0, y=(1.03*(max(revRanks$grad.rate.rank,revRanks$rev.per.student.rank))),hjust= 0.1,size=3.5)
+p<-p + geom_text(label="Graduation Rate Ranks", x=1, y=(1.03*(max(revRanks$grad.rate.rank,revRanks$rev.per.student.rank))),hjust= 0.9,size=3.5)
 p
 ```
 
@@ -693,7 +694,7 @@ As you can see, the slopes of the lines in all three plots are large (giving the
 
 To clean up these slope plots, I decided to remove all of the states except the top 10 and bottom 10 in the first ranking of each plot. This shows the where the best and worst schools by each hypothesis variable end up in the Graduation Rate rankings.
 
-```{r}
+```{r echo=FALSE, warning=FALSE, message=FALSE}
 number.of.ranks <- 10
 
 top.and.bottom.ranks <- filter(sizeRanks, size.rank < number.of.ranks | size.rank >= dim(sizeRanks)[1] - number.of.ranks)
@@ -703,10 +704,10 @@ p<-p + theme(panel.grid=element_blank())
 p<-p + theme(axis.ticks=element_blank())
 p<-p + theme(axis.text=element_blank())
 p<-p + theme(panel.border=element_blank())  
-p<-p + geom_text(label=top.and.bottom.ranks$Postal.Code, y=top.and.bottom.ranks$grad.rate.rank, x=1,hjust=-0.2,size=3.5)
-p<-p + geom_text(label=top.and.bottom.ranks$Postal.Code, y=top.and.bottom.ranks$size.rank, x=0,hjust=1.2,size=3.5)
-p<-p + geom_text(label="Revenue Per Student Ranks", x=0, y=(1.05*(max(top.and.bottom.ranks$grad.rate.rank,top.and.bottom.ranks$size.rank))),hjust= 1.2,size=3.5)
-p<-p + geom_text(label="Graduation Rate Ranks", x=1, y=(1.05*(max(top.and.bottom.ranks$grad.rate.rank,top.and.bottom.ranks$size.rank))),hjust=-0.1,size=3.5)
+p<-p + geom_text(label=top.and.bottom.ranks$Postal.Code, y=top.and.bottom.ranks$grad.rate.rank, x=1,hjust=-0.2,size=2)
+p<-p + geom_text(label=top.and.bottom.ranks$Postal.Code, y=top.and.bottom.ranks$size.rank, x=0,hjust=1.2,size=2)
+p<-p + geom_text(label="Revenue Per Student Ranks", x=0, y=(1.03*(max(top.and.bottom.ranks$grad.rate.rank,top.and.bottom.ranks$size.rank))),hjust= 0.1,size=3.5)
+p<-p + geom_text(label="Graduation Rate Ranks", x=1, y=(1.03*(max(top.and.bottom.ranks$grad.rate.rank,top.and.bottom.ranks$size.rank))),hjust= 0.9,size=3.5)
 p
 
 top.and.bottom.ranks <- filter(ratioRanks, ratio.rank < number.of.ranks | ratio.rank >= dim(ratioRanks)[1] - number.of.ranks)
@@ -716,10 +717,10 @@ p<-p + theme(panel.grid=element_blank())
 p<-p + theme(axis.ticks=element_blank())
 p<-p + theme(axis.text=element_blank())
 p<-p + theme(panel.border=element_blank())  
-p<-p + geom_text(label=top.and.bottom.ranks$Postal.Code, y=top.and.bottom.ranks$grad.rate.rank, x=1,hjust=-0.2,size=3.5)
-p<-p + geom_text(label=top.and.bottom.ranks$Postal.Code, y=top.and.bottom.ranks$ratio.rank, x=0,hjust=1.2,size=3.5)
-p<-p + geom_text(label="Revenue Per Student Ranks", x=0, y=(1.05*(max(top.and.bottom.ranks$grad.rate.rank,top.and.bottom.ranks$ratio.rank))),hjust= 1.2,size=3.5)
-p<-p + geom_text(label="Graduation Rate Ranks", x=1, y=(1.05*(max(top.and.bottom.ranks$grad.rate.rank,top.and.bottom.ranks$ratio.rank))),hjust=-0.1,size=3.5)
+p<-p + geom_text(label=top.and.bottom.ranks$Postal.Code, y=top.and.bottom.ranks$grad.rate.rank, x=1,hjust=-0.2,size=2)
+p<-p + geom_text(label=top.and.bottom.ranks$Postal.Code, y=top.and.bottom.ranks$ratio.rank, x=0,hjust=1.2,size=2)
+p<-p + geom_text(label="Revenue Per Student Ranks", x=0, y=(1.03*(max(top.and.bottom.ranks$grad.rate.rank,top.and.bottom.ranks$ratio.rank))),hjust= 0.1,size=3.5)
+p<-p + geom_text(label="Graduation Rate Ranks", x=1, y=(1.03*(max(top.and.bottom.ranks$grad.rate.rank,top.and.bottom.ranks$ratio.rank))),hjust=0.9,size=3.5)
 p
 
 top.and.bottom.ranks <- filter(revRanks, rev.per.student.rank < number.of.ranks | rev.per.student.rank >= dim(revRanks)[1] - number.of.ranks)
@@ -729,10 +730,10 @@ p<-p + theme(panel.grid=element_blank())
 p<-p + theme(axis.ticks=element_blank())
 p<-p + theme(axis.text=element_blank())
 p<-p + theme(panel.border=element_blank())            
-p<-p + geom_text(label=top.and.bottom.ranks$Postal.Code, y=top.and.bottom.ranks$grad.rate.rank, x=1,hjust=-0.2,size=3.5)
-p<-p + geom_text(label=top.and.bottom.ranks$Postal.Code, y=top.and.bottom.ranks$rev.per.student.rank, x=0,hjust=1.2,size=3.5)
-p<-p + geom_text(label="Revenue Per Student Ranks", x=0, y=(1.05*(max(top.and.bottom.ranks$grad.rate.rank,top.and.bottom.ranks$rev.per.student.rank))),hjust= 1.2,size=3.5)
-p<-p + geom_text(label="Graduation Rate Ranks", x=1, y=(1.05*(max(top.and.bottom.ranks$grad.rate.rank,top.and.bottom.ranks$rev.per.student.rank))),hjust=-0.1,size=3.5)
+p<-p + geom_text(label=top.and.bottom.ranks$Postal.Code, y=top.and.bottom.ranks$grad.rate.rank, x=1,hjust=-0.2,size=2)
+p<-p + geom_text(label=top.and.bottom.ranks$Postal.Code, y=top.and.bottom.ranks$rev.per.student.rank, x=0,hjust=1.2,size=2)
+p<-p + geom_text(label="Revenue Per Student Ranks", x=0, y=(1.03*(max(top.and.bottom.ranks$grad.rate.rank,top.and.bottom.ranks$rev.per.student.rank))),hjust= 0.1,size=3.5)
+p<-p + geom_text(label="Graduation Rate Ranks", x=1, y=(1.03*(max(top.and.bottom.ranks$grad.rate.rank,top.and.bottom.ranks$rev.per.student.rank))),hjust= 0.9,size=3.5)
 p
 ```
 
@@ -742,7 +743,7 @@ Again, we see that the hypothesis variable rankings are not good indicators of w
 
 For my final visualizations, I picked 3 plots that show the relationship between Revenue per Student and Graduation Rate. They all fall on different parts of the "Information Density" versus "Accessibility" spectrum. The plots will go in order of increasing information density, meaning we'll start with the most accessible.
 
-```{r}
+```{r echo=FALSE, warning=FALSE, message=FALSE}
 top.and.bottom.ranks <- filter(revRanks, rev.per.student.rank < number.of.ranks | rev.per.student.rank >= dim(revRanks)[1] - number.of.ranks)
 p<-ggplot(top.and.bottom.ranks) + geom_segment(aes(x=0,xend=1,y=rev.per.student.rank,yend=grad.rate.rank),size=.75) + scale_x_continuous(breaks = c())
 p<-p + theme(panel.background = element_blank())
@@ -750,8 +751,8 @@ p<-p + theme(panel.grid=element_blank())
 p<-p + theme(axis.ticks=element_blank())
 p<-p + theme(axis.text=element_blank())
 p<-p + theme(panel.border=element_blank())            
-p<-p + geom_text(label=top.and.bottom.ranks$Postal.Code, y=top.and.bottom.ranks$grad.rate.rank, x=1,hjust=-0.2,size=3.5)
-p<-p + geom_text(label=top.and.bottom.ranks$Postal.Code, y=top.and.bottom.ranks$rev.per.student.rank, x=0,hjust=1.2,size=3.5)
+p<-p + geom_text(label=top.and.bottom.ranks$Postal.Code, y=top.and.bottom.ranks$grad.rate.rank, x=1,hjust=-0.2,size=2)
+p<-p + geom_text(label=top.and.bottom.ranks$Postal.Code, y=top.and.bottom.ranks$rev.per.student.rank, x=0,hjust=1.2,size=2)
 p<-p + geom_text(label="'Revenue Per Student' Ranks", x=0, y=(1.03*(max(top.and.bottom.ranks$grad.rate.rank,top.and.bottom.ranks$rev.per.student.rank))),hjust= 0.1,size=5)
 p<-p + geom_text(label="'Graduation Rate' Ranks", x=1, y=(1.03*(max(top.and.bottom.ranks$grad.rate.rank,top.and.bottom.ranks$rev.per.student.rank))),hjust=--0.9,size=5)
 p<-p + xlab("") + ylab("") + ggtitle("State Rankings of Scholastic Performance")
@@ -760,7 +761,7 @@ p
 
 One would expect a state's ranking for 'Revenue Per Student' to be a strong indicator of that state's ranking for 'Graduation Rate', but looking at this graph, it's clear that the variation between the two rankings is very high, with the top 10 and bottom 10 schools in revenue get wildly different rankings for their graduation rate.
 
-```{r}
+```{r echo=FALSE, warning=FALSE, message=FALSE}
 map1 <- ggplot() + geom_polygon(data=state_data, aes(x=long, y=lat, group = group, fill=state_data$ALL_RATE),colour="lightgray") + scale_fill_continuous(low = "#EEEEEE", high = "darkred", guide="colorbar", name="Graduation Rate        ") + xlab("") + ylab("") + scale_x_continuous(breaks=c(), limits=c(-130, -65)) + scale_y_continuous(breaks=c()) + theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(), panel.background = element_blank(), axis.line = element_line(colour = "white")) + ggtitle("Graduation Rate by State")
 
 map2 <- ggplot() + geom_polygon(data=state_data, aes(x=long, y=lat, group = group, fill=state_data$Total.General.Revenue.Per.Student),colour="lightgray") + scale_fill_continuous(low = "#DDDDDD", high = "darkgreen", guide="colorbar", trans="log10", name="Revenue per Student", breaks=c(10000, 15000, 20000, 25000)) + xlab("") + ylab("") + scale_x_continuous(breaks=c(), limits=c(-130, -65)) + scale_y_continuous(breaks=c()) + theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(), panel.background = element_blank(), axis.line = element_line(colour = "white")) + ggtitle("Revenue per Student by State")
@@ -770,7 +771,7 @@ grid.arrange(map1, map2)
 
 By showing the Graduation Rates and Revenues per Student for each state, one can see that the states with high graduation rates don't necessarily have high Revenues per Student and vice versa, further illustrating the lack of correlation between the two variables.
 
-```{r}
+```{r echo=FALSE, warning=FALSE, message=FALSE}
 ggplot(aes(x=Total.General.Revenue.Per.Student, y=ALL_RATE), data=data) +
   geom_point(alpha=0.10) + 
   xlim(0, quantile(data$Total.General.Revenue.Per.Student, .99, na.rm=TRUE)) +
